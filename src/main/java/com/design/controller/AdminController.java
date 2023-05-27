@@ -238,4 +238,10 @@ public class AdminController {
     public List<Major> queryCourseMajor(@PathVariable Integer collegeId) {
         return majorService.queryCourseMajor(collegeId);
     }
+
+    @RequestMapping("/logout")
+    @ResponseBody
+    public String logout() {
+        return "logout success !";
+    }
 }
