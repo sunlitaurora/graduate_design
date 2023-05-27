@@ -244,4 +244,10 @@ public class AdminController {
     public String query(String username) {
         return "查询成功";
     }
+
+    @RequestMapping("/logout")
+    @ResponseBody
+    public String logout() {
+        return "logout success !";
+    }
 }
