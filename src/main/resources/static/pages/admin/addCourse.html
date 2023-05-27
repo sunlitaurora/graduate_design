@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="../../plugins/element-ui/lib/theme-chalk/index.css">
+    <style>
+        .grid-content {
+            border-radius: 4px;
+            min-height: 36px;
+        }
+    </style>
+</head>
+<body>
+<div id="addCourse">
+    <el-form :model="ruleForm" :label-position="labelPosition" :rules="formRules" ref="ruleForm" label-width="80px"
+             class="demo-ruleForm">
+        <el-row>
+            <el-col :span="6">
+                <div class="grid-content"></div>
+            </el-col>
+            <el-col :span="5">
+                <div class="grid-content">
+                    <el-form-item label="课程编号" prop="cid" show-message>
+                        <el-input v-model="ruleForm.cid"></el-input>
+                    </el-form-item>
+                </div>
+            </el-col>
+            <el-col :span="1">
+                <div class="grid-content"></div>
+            </el-col>
+            <el-col :span="5">
+                <div class="grid-content">
+                    <el-form-item label="课程类型" prop="type" show-message>
+                        <el-radio-group v-model="ruleForm.type">
+                            <el-radio label="必修"></el-radio>
+                            <el-radio label="选修"></el-radio>
+                        </el-radio-group>
+                    </el-form-item>
+                </div>
+            </el-col>
+        </el-row>
+        <el-row>
+            <el-col :span="6">
+                <div class="grid-content"></div>
+            </el-col>
+            <el-col :span="5">
+                <div class="grid-content">
+                    <el-form-item label="课程名" prop="cname" show-message>
+                        <el-input v-model="ruleForm.cname"></el-input>
+                    </el-form-item>
+                </div>
+            </el-col>
+            <el-col :span="1">
+                <div class="grid-content"></div>
+            </el-col>
+            <el-col :span="5">
+                <div class="grid-content">
+                    <el-form-item label="学科部" prop="college">
+                        <el-cascader
+                                v-model="ruleForm.college"
+                                :options="collegeOptions"
+                                :props="{ value: 'id', label: 'college' }"
+                                @change="handleCollegeChange"></el-cascader>
+                    </el-form-item>
+                </div>
+            </el-col>
+        </el-row>
+        <el-row>
+            <el-col :span="6">
+                <div class="grid-content"></div>
+            </el-col>
+            <el-col :span="5">
+                <div class="grid-content">
+                    <el-form-item label="课程简介" prop="cintroduction" show-message>
+                        <el-input type="textarea" v-model="ruleForm.cintroduction"></el-input>
+                    </el-form-item>
+                </div>
+            </el-col>
+            <el-col :span="1">
+                <div class="grid-content"></div>
+            </el-col>
+            <el-col :span="5">
+                <div class="grid-content">
+                    <el-form-item label="专业" prop="major">
+                        <el-cascader
+                                v-model="ruleForm.major"
+                                :options="majorOptions"
+                                :props="{ value: 'id', label: 'major' }"
+                                @change="handleMajorChange"></el-cascader>
+                    </el-form-item>
+                </div>
+            </el-col>
+        </el-row>
+        <el-row>
+            <el-col :span="6">
+                <div class="grid-content"></div>
+            </el-col>
+            <el-col :span="5">
+                <div class="grid-content">
+                    <el-form-item>
+                        <el-button type="primary" @click="submitForm">确认修改</el-button>
+                        <el-button @click="resetForm">重置</el-button>
+                    </el-form-item>
+                </div>
+            </el-col>
+        </el-row>
+    </el-form>
+</div>
+
+<script src="../../plugins/vue/vue.js"></script>
+<script src="../../plugins/element-ui/lib/index.js"></script>
+<script src="../../plugins/axios/axios-0.18.0.js"></script>
+<script type="text/javascript" src="../../js/jquery.min.js"></script>
+
+<script>
+    new Vue({
+        el: '#addCourse',
+        data() {
+            return {
+                labelPosition: 'top',
+                ruleForm: {
+                    cid: '',
+                    cname: '',
+                    cintroduction: '',
+                    type: '',
+                    collegeId: '',
+                    college: '',
+                    majorId: '',
+                    major: ''
+                },
+                collegeOptions: [],
+                majorOptions: [],
+                classesOptions: [],
+                formRules: {
+                    cid: [
+                        {required: true, message: '请输入课程编号', trigger: 'blur'},
+                        {pattern: /^[A-Za-z0-9]{1,4}$/, message: '课程编号应为1~4个数字或字母', trigger: 'blur'}
+                    ],
+                    cname: [
+                        {required: true, message: '请输入课程名称', trigger: 'blur'}
+                    ],
+                    cintroduction: [
+                        {required: true, message: '请输入课程介绍', trigger: 'blur'}
+                    ],
+                    type: [
+                        {required: true, message: '请选择课程类型', trigger: 'change'}
+                    ],
+                    college: [
+                        {required: true, message: '请选择所属学院', trigger: 'change'}
+                    ],
+                    major: [
+                        {required: true, message: '请选择所属专业', trigger: 'change'}
+                    ]
+                }
+            };
+        },
+        mounted() {
+            this.getCollegeOption();
+        },
+        methods: {
+            //提交修改数据
+            submitForm() {
+                this.$refs.ruleForm.validate((valid) => {
+                    if (valid) {
+                        let data;
+                        let formName = this.ruleForm;
+                        data = {
+                            cid: formName.cid,
+                            cname: formName.cname,
+                            cintroduction: formName.cintroduction,
+                            type: formName.type,
+                            collegeId: formName.college[0],
+                            majorId: formName.major[0],
+                        };
+                        console.log(data);
+                        axios.post("/adminController/addCourse", data).then((response) => {
+                            if (response.data.code === 1) {
+                                this.$message.success("新增课程成功！");
+                            } else if (response.data.code === 0) {
+                                this.$message.error(response.data.msg);
+                            }
+                        });
+                    } else {
+                        console.log('添加错误！');
+                        return false;
+                    }
+                })
+            },
+            //获取学科部
+            getCollegeOption() {
+                axios.get('/adminController/queryCourseCollege').then(response => {
+                    this.collegeOptions = response.data;
+                })
+            },
+            //获取各学科部对应的专业
+            getMajorOption(collegeId) {
+                axios.get('/adminController/queryCourseMajor/' + collegeId).then(response => {
+                    this.majorOptions = response.data;
+                })
+            },
+            //学科部改变
+            handleCollegeChange(value) {
+                this.getMajorOption(value[value.length - 1]);
+                this.ruleForm.major = [];
+            },
+            //重置修改表单里的内容
+            resetForm() {
+                this.$refs.ruleForm.resetFields();
+            },
+        }
+    })
+</script>
+</body>
+</html>

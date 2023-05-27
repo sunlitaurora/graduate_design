@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="../plugins/element-ui/lib/theme-chalk/index.css"/>
+    <link rel="stylesheet" href="../styles/index.css"/>
+    <link rel="stylesheet" href="../styles/icon/iconfont.css"/>
+</head>
+<body>
+<div id="app">
+    <div class="app-wrapper openSidebar clearfix">
+        <!-- sidebar -->
+        <div class="sidebar-container">
+            <div class="logo">
+                <span style="color: #cccccc">高校学生选课管理系统</span>
+            </div>
+
+            <el-scrollbar wrap-class="scrollbar-wrapper">
+                <el-menu
+                        :default-active="defAct"
+                        :unique-opened="false"
+                        :collapse-transition="false"
+                        background-color="#343744"
+                        text-color="#bfcbd9"
+                        active-text-color="#f4f4f5"
+                >
+                    <div v-for="item in menuList" :key="item.id">
+                        <el-menu-item :index="item.id" @click="menuHandle(item,false)">
+                            <i class="el-icon-reading" :class="item.icon"></i>
+                            <span slot="title">{{item.name}}</span>
+                        </el-menu-item>
+                    </div>
+                </el-menu>
+            </el-scrollbar>
+        </div>
+        <div class="main-container">
+            <!-- <navbar /> -->
+            <div class="navbar">
+                <div class="head-lable">
+                    <span>{{headTitle}}</span>
+                </div>
+                <div class="right-menu">
+                    <div class="avatar-wrapper">欢迎您，{{ userInfo.sname }}</div>
+                    <el-button type="text" icon="el-icon-switch-button" alt="退出" @click="logOut"></el-button>
+                </div>
+            </div>
+            <div style="height: 100%" v-loading="loading">
+                <iframe
+                        id="cIframe"
+                        class="c_iframe"
+                        name="cIframe"
+                        :src="iframeUrl"
+                        width="100%"
+                        height="100%"
+                        frameborder="0"
+                        v-show="!loading"
+                ></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 开发环境版本，包含了有帮助的命令行警告 -->
+<script src="../plugins/vue/vue.js"></script>
+<!-- 引入组件库 -->
+<script src="../plugins/element-ui/lib/index.js"></script>
+<!-- 引入axios -->
+<script src="../plugins/axios/axios-0.18.0.js"></script>
+<script src="../js/request.js"></script>
+<script src="../js/login.js"></script>
+
+<script>
+    new Vue({
+        el: '#app',
+        data() {
+            return {
+                defAct: '1',
+                menuActive: '1',
+                userInfo: '',
+                menuList: [
+                    {
+                        id: '1',
+                        name: '选课',
+                        url: 'student/selCourse.html',
+                        icon: 'el-icon-reading'
+                    },
+                    {
+                        id: '2',
+                        name: '查看选课结果',
+                        url: 'student/selectCourseResult.html',
+                        icon: 'el-icon-tickets'
+                    },
+                    {
+                        id: '3',
+                        name: '退选',
+                        url: 'student/deleteCourseResult.html',
+                        icon: 'el-icon-remove-outline'
+                    },
+                    {
+                        id: '4',
+                        name: '查看已修课程',
+                        url: 'student/endCourse.html',
+                        icon: 'el-icon-view'
+                    },
+                    {
+                        id: '5',
+                        name: '管理个人信息',
+                        url: 'student/manageStudent.html',
+                        icon: 'el-icon-user'
+                    }
+                ],
+                iframeUrl: 'student/selCourse.html',
+                headTitle: '选课',
+                goBackFlag: false,
+                loading: true,
+                timer: null
+            };
+        },
+        beforeDestroy() {
+            this.timer = null;
+            clearTimeout(this.timer);
+        },
+        mounted() {
+            window.menuHandle = this.menuHandle;
+        },
+        created() {
+            const userInfo = window.localStorage.getItem('userInfo');
+            if (userInfo) {
+                this.userInfo = JSON.parse(userInfo);
+            }
+            console.log(this.userInfo);
+            this.closeLoading()
+        },
+        methods: {
+            logOut() {
+                logoutApi().then((res) => {
+                    if (res.code === 1) {
+                        localStorage.removeItem('userInfo');
+                        window.location.href = 'login.html';
+                    }
+                })
+            },
+            handleSelect(key, keyPath) {
+                console.log(key, keyPath);
+            },
+            menuHandle(item, goBackFlag) {
+                this.loading = true;
+                this.menuActive = item.id;
+                this.iframeUrl = item.url;
+                this.headTitle = item.name;
+                this.goBackFlag = goBackFlag;
+                this.closeLoading();
+            },
+            closeLoading() {
+                this.timer = null;
+                this.timer = setTimeout(() => {
+                    this.loading = false;
+                }, 1000);
+            }
+        }
+    })
+</script>
+
+</body>
+</html>

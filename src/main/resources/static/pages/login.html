@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <title>login</title>
+    <link href="../styles/login.css" rel="stylesheet">
+    <link rel="stylesheet" href="../plugins/element-ui/lib/theme-chalk/index.css">
+</head>
+
+<body>
+<div id="loginDiv">
+    <form action="#" method="post">
+        <h1 id="loginMsg">LOGIN IN</h1>
+        <p>Username:
+            <el-input v-model="loginData.username" placeholder="请输入用户名"></el-input>
+        </p>
+
+        <p>Password:
+            <el-input placeholder="请输入密码" v-model="loginData.password" show-password></el-input>
+        </p>
+
+        <div style="margin-top: 20px">
+            <el-radio-group v-model="loginData.role" size="small">
+                <el-radio label="管理员" border></el-radio>
+                <el-radio label="老师" border></el-radio>
+                <el-radio label="学生" border></el-radio>
+            </el-radio-group>
+        </div>
+
+        <div id="subDiv">
+            <el-button type="primary" @click="login">登录</el-button>
+            <el-button type="primary" @click="reset">重置</el-button>
+        </div>
+    </form>
+</div>
+
+<script src="../plugins/vue/vue.js"></script>
+
+<script src="../plugins/element-ui/lib/index.js"></script>
+
+<script type="text/javascript" src="../js/jquery.min.js"></script>
+
+<script src="../plugins/axios/axios-0.18.0.js"></script>
+
+<script>
+    new Vue({
+        el: '#loginDiv',
+        data() {
+            return {
+                loginData: {
+                    username: '',
+                    password: '',
+                    role: ''
+                },
+            };
+        },
+        methods: {
+            reset() {
+                this.loginData = {}
+            },
+            login() {
+                const loginData = new FormData();
+                if (this.loginData.username === '') {
+                    this.$message.error("请输入用户名！");
+                } else if (this.loginData.password === '') {
+                    this.$message.error("请输入密码！");
+                } else if (this.loginData.role === '') {
+                    this.$message.error("请选择角色！");
+                } else if (this.loginData.role === '管理员') {
+                    const url = "http://localhost/loginController/adminLogin";
+                    loginData.append('aname', this.loginData.username);
+                    loginData.append('apassword', this.loginData.password);
+                    axios.post(url, loginData, {
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        }
+                    }).then(res => {
+                        // 处理响应数据
+                        if (res.data.code === 0) {
+                            this.$message.error(res.data.msg);
+                        } else {
+                            localStorage.setItem('userInfo', JSON.stringify(res.data.data))
+                            window.location.href = "admin.html"
+                        }
+                    })
+                } else if (this.loginData.role === '老师') {
+                    const url = "http://localhost/loginController/teacherLogin";
+                    loginData.append('tid', this.loginData.username);
+                    loginData.append('tpassword', this.loginData.password);
+                    axios.post(url, loginData, {
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        }
+                    }).then(res => {
+                        // 处理响应数据
+                        if (res.data.code === 0) {
+                            this.$message.error(res.data.msg);
+                        } else {
+                            localStorage.setItem('userInfo', JSON.stringify(res.data.data))
+                            window.location.href = "teacher.html"
+                        }
+                    })
+                } else if (this.loginData.role === '学生') {
+                    const url = "http://localhost/loginController/studentLogin";
+                    loginData.append('sid', this.loginData.username);
+                    loginData.append('spassword', this.loginData.password);
+                    axios.post(url, loginData, {
+                        headers: {
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        }
+                    }).then((res) => {
+                        // 处理响应数据
+                        if (res.data.code === 0) {
+                            this.$message.error(res.data.msg);
+                        } else {
+                            localStorage.setItem('userInfo', JSON.stringify(res.data.data))
+                            window.location.href = "student.html"
+                        }
+                    }).catch(error => {
+                        console.log(error)
+                    })
+                }
+            }
+        }
+    })
+</script>
+
+</body>
+</html>

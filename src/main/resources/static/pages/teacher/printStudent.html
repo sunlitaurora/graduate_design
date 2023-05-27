@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="../../plugins/element-ui/lib/theme-chalk/index.css">
+    <link rel="stylesheet" href="../../styles/index.css"/>
+    <style>
+        .el-table .warning-row {
+            background: oldlace;
+        }
+
+        .el-table .success-row {
+            background: #f0f9eb;
+        }
+    </style>
+</head>
+<body>
+<div id="printStudent">
+    <div>
+        <el-button type="text" icon="el-icon-back" alt="返回" @click="back"></el-button>
+        查看选课名单
+    </div>
+    <h6>开课名 {{studentInfo.cname}}</h6>
+    <el-button type="primary" @click="handleExportExcel" size="small">导出 Excel</el-button>
+    <!--显示学生信息-->
+    <el-table
+            :data="tableData"
+            style="width: 100%"
+            height="400"
+            :row-class-name="tableRowClassName"
+            border>
+        <el-table-column
+                prop="sid"
+                label="学号">
+        </el-table-column>
+        <el-table-column
+                prop="sname"
+                label="姓名">
+        </el-table-column>
+        <el-table-column
+                prop="ssex"
+                label="性别">
+        </el-table-column>
+        <el-table-column
+                prop="college"
+                label="学科部">
+        </el-table-column>
+        <el-table-column
+                prop="major"
+                label="专业">
+        </el-table-column>
+        <el-table-column
+                prop="classes"
+                label="班级">
+        </el-table-column>
+    </el-table>
+    <el-pagination
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
+            :current-page="currentPage"
+            :page-sizes="[5, 10, 15, 20]"
+            :page-size="5"
+            layout="total, sizes, prev, pager, next, jumper"
+            :total="totalCount">
+    </el-pagination>
+</div>
+<script src="../../plugins/vue/vue.js"></script>
+<script src="../../plugins/element-ui/lib/index.js"></script>
+<script src="../../plugins/axios/axios-0.18.0.js"></script>
+<script src="../../js/exceljs.min.js"></script>
+<script src="../../js/FileSaver.min.js"></script>
+<script type="text/javascript" src="../../js/jquery.min.js"></script>
+<script>
+    new Vue({
+        el: '#printStudent',
+        data() {
+            return {
+                studentInfo: {},
+                //学生数据
+                tableData: [],
+                //当前页
+                currentPage: 1,
+                //分页数据大小
+                pageSize: 5,
+                //数据总数
+                totalCount: 0,
+            }
+        },
+        mounted() {
+            const studentInfo = window.sessionStorage.getItem('studentInfo');
+            if (studentInfo) {
+                this.studentInfo = JSON.parse(studentInfo);
+            }
+            this.selectAll();
+        },
+        methods: {
+            back() {
+                window.location.href = "searchSC.html";
+                sessionStorage.removeItem("studentInfo")
+            },
+            //查询所有
+            selectAll() {
+                const data = new FormData();
+                data.append('currentPage', this.currentPage);
+                data.append('pageSize', this.pageSize);
+                data.append('cid', this.studentInfo.cid);
+                data.append('tid', this.studentInfo.tid);
+                axios.post("/teacherController/lookChoose", data, {
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    }
+                }).then(response => {
+                    //获得记录
+                    this.tableData = response.data.rows;
+                    //设置总记录数
+                    this.totalCount = response.data.totalCount;
+                });
+            },
+            //修改表格颜色
+            tableRowClassName({rowIndex}) {
+                if (rowIndex === 1 || rowIndex === 5 || rowIndex === 9) {
+                    return 'warning-row';
+                } else if (rowIndex === 3 || rowIndex === 7) {
+                    return 'success-row';
+                }
+                return '';
+            },
+            //修改显示数据大小
+            handleSizeChange(val) {
+                this.pageSize = val;
+                this.selectAll();
+            },
+            //修改当前页
+            handleCurrentChange(val) {
+                this.currentPage = val;
+                this.selectAll()
+            },
+            handleExportExcel() {
+                const header = ['学号', '姓名', '性别', '学科部', '专业', '班级'];
+                const data = this.tableData.map(item => [item.sid, item.sname, item.ssex, item.college, item.major, item.classes]);
+                this.$confirm('此操作将生成Excel文件, 是否继续?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    this.exportExcel(header, data, '人员名单');
+                }).catch(() => {
+                    this.$message({
+                        type: 'info',
+                        message: '已取消生成'
+                    });
+                });
+            },
+            exportExcel(header, data, filename) {
+                // 新建工作簿
+                const workbook = new ExcelJS.Workbook();
+                // 新建工作表
+                const worksheet = workbook.addWorksheet('Sheet1');
+                // 添加表头
+                worksheet.addRow(header);
+                // 添加数据
+                data.forEach((item) => {
+                    worksheet.addRow(item)
+                });
+                // 导出 Excel 表格
+                workbook.xlsx.writeBuffer().then((buffer) => {
+                    const blob = new Blob([buffer], {type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'})
+                    saveAs(blob, `${filename}.xlsx`)
+                });
+                this.$message.success("已生成Excel文件！")
+            }
+        }
+    })
+</script>
+</body>
+</html>

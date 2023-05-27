@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="../../plugins/element-ui/lib/theme-chalk/index.css">
+    <style>
+        .grid-content {
+            border-radius: 4px;
+            min-height: 36px;
+        }
+    </style>
+</head>
+<body>
+<div id="addStudent">
+    <el-form :model="ruleForm" :label-position="labelPosition" :rules="formRules" ref="ruleForm" label-width="80px"
+             class="demo-ruleForm">
+        <el-row>
+            <el-col :span="6">
+                <div class="grid-content"></div>
+            </el-col>
+            <el-col :span="5">
+                <div class="grid-content">
+                    <el-form-item label="学号" prop="sid" show-message>
+                        <el-input v-model="ruleForm.sid"></el-input>
+                    </el-form-item>
+                </div>
+            </el-col>
+            <el-col :span="1">
+                <div class="grid-content"></div>
+            </el-col>
+            <el-col :span="5">
+                <div class="grid-content">
+                    <el-form-item label="年龄" prop="sage" show-message>
+                        <el-input v-model.number="ruleForm.sage"></el-input>
+                    </el-form-item>
+                </div>
+            </el-col>
+        </el-row>
+        <el-row>
+            <el-col :span="6">
+                <div class="grid-content"></div>
+            </el-col>
+            <el-col :span="5">
+                <div class="grid-content">
+                    <el-form-item label="姓名" prop="sname" show-message>
+                        <el-input v-model="ruleForm.sname"></el-input>
+                    </el-form-item>
+                </div>
+            </el-col>
+            <el-col :span="1">
+                <div class="grid-content"></div>
+            </el-col>
+            <el-col :span="5">
+                <div class="grid-content">
+                    <el-form-item label="学科部" prop="college">
+                        <el-cascader
+                                v-model="ruleForm.college"
+                                :options="collegeOptions"
+                                :props="{ value: 'id', label: 'college' }"
+                                @change="handleCollegeChange"></el-cascader>
+                    </el-form-item>
+                </div>
+            </el-col>
+        </el-row>
+        <el-row>
+            <el-col :span="6">
+                <div class="grid-content"></div>
+            </el-col>
+            <el-col :span="5">
+                <div class="grid-content">
+                    <el-form-item label="身份证" prop="sidcard" show-message>
+                        <el-input v-model="ruleForm.sidcard"></el-input>
+                    </el-form-item>
+                </div>
+            </el-col>
+            <el-col :span="1">
+                <div class="grid-content"></div>
+            </el-col>
+            <el-col :span="5">
+                <div class="grid-content">
+                    <el-form-item label="专业" prop="major">
+                        <el-cascader
+                                v-model="ruleForm.major"
+                                :options="majorOptions"
+                                :props="{ value: 'id', label: 'major' }"
+                                @change="handleMajorChange"></el-cascader>
+                    </el-form-item>
+                </div>
+            </el-col>
+        </el-row>
+        <el-row>
+            <el-col :span="6">
+                <div class="grid-content"></div>
+            </el-col>
+            <el-col :span="5">
+                <div class="grid-content">
+                    <el-form-item label="性别" prop="ssex" show-message>
+                        <el-radio-group v-model="ruleForm.ssex">
+                            <el-radio label="男"></el-radio>
+                            <el-radio label="女"></el-radio>
+                        </el-radio-group>
+                    </el-form-item>
+                </div>
+            </el-col>
+            <el-col :span="1">
+                <div class="grid-content"></div>
+            </el-col>
+            <el-col :span="5">
+                <div class="grid-content">
+                    <el-form-item label="班级" prop="classes">
+                        <el-cascader
+                                v-model="ruleForm.classes"
+                                :options="classesOptions"
+                                :props="{ value: 'id', label: 'classes' }"></el-cascader>
+                    </el-form-item>
+                </div>
+            </el-col>
+        </el-row>
+        <el-row>
+            <el-col :span="6">
+                <div class="grid-content"></div>
+            </el-col>
+            <el-col :span="5">
+                <div class="grid-content">
+                    <el-form-item label="密码" prop="spassword" show-message>
+                        <el-input v-model="ruleForm.spassword"></el-input>
+                    </el-form-item>
+                </div>
+            </el-col>
+            <el-col :span="1">
+                <div class="grid-content"></div>
+            </el-col>
+            <el-col :span="5">
+                <div class="grid-content">
+                    <el-form-item label="&zwnj;">
+                        <el-button type="primary" @click="submitForm">确认修改</el-button>
+                        <el-button @click="resetForm">重置</el-button>
+                    </el-form-item>
+                </div>
+            </el-col>
+        </el-row>
+    </el-form>
+</div>
+
+<script src="../../plugins/vue/vue.js"></script>
+<script src="../../plugins/element-ui/lib/index.js"></script>
+<script src="../../plugins/axios/axios-0.18.0.js"></script>
+<script type="text/javascript" src="../../js/jquery.min.js"></script>
+
+<script>
+    new Vue({
+        el: '#addStudent',
+        data() {
+            return {
+                labelPosition: 'top',
+                ruleForm: {
+                    sid: '',
+                    sname: '',
+                    sidcard: '',
+                    ssex: '',
+                    spassword: '',
+                    sage: '',
+                    collegeId: '',
+                    college: '',
+                    majorId: '',
+                    major: '',
+                    classesId: '',
+                    classes: '',
+                },
+                collegeOptions: [],
+                majorOptions: [],
+                classesOptions: [],
+                formRules: {
+                    sid: [
+                        {required: true, message: '请输入学号', trigger: 'blur'},
+                        {pattern: /^\d+$/, message: '学号只能包含数字字符', trigger: 'blur'},
+                        {min: 10, max: 10, message: '学号长度为10个字符', trigger: 'blur'}
+                    ],
+                    sname: [
+                        {required: true, message: '请输入姓名', trigger: 'blur'},
+                        {pattern: /^[\u4e00-\u9fa5]+$/, message: '姓名只能包含中文字符', trigger: 'blur'},
+                        {min: 2, max: 10, message: '姓名长度在2到10个字符之间', trigger: 'blur'}
+                    ],
+                    sidcard: [
+                        {required: true, message: '请输入身份证号', trigger: 'blur'},
+                        {pattern: /^[0-9]{17}[0-9xX]$/, message: '请输入正确的身份证号', trigger: 'blur'}
+                    ],
+                    ssex: [
+                        {required: true, message: '请选择性别', trigger: 'change'}
+                    ],
+                    spassword: [
+                        {required: true, message: '请输入密码', trigger: 'blur'},
+                        {min: 6, max: 20, message: '密码长度在6到20个字符之间', trigger: 'blur'}
+                    ],
+                    sage: [
+                        {required: true, message: '请输入年龄', trigger: 'blur'},
+                        {type: 'number', message: '年龄必须为数字', trigger: 'blur'},
+                        {validator: this.validateAge, trigger: 'blur'}
+                    ],
+                    college: [
+                        {required: true, message: '请选择学科部', trigger: 'change'}
+                    ],
+                    major: [
+                        {required: true, message: '请选择专业', trigger: 'change'}
+                    ],
+                    classes: [
+                        {required: true, message: '请选择班级', trigger: 'change'}
+                    ]
+                }
+            };
+        },
+        mounted() {
+            this.getCollegeOption();
+        },
+        methods: {
+            //提交修改数据
+            submitForm() {
+                this.$refs.ruleForm.validate((valid) => {
+                    if (valid) {
+                        let data;
+                        let formName = this.ruleForm;
+                        data = {
+                            sid: formName.sid,
+                            sname: formName.sname,
+                            sidcard: formName.sidcard,
+                            ssex: formName.ssex,
+                            spassword: formName.spassword,
+                            sage: formName.sage,
+                            collegeId: formName.college[0],
+                            majorId: formName.major[0],
+                            classesId: formName.classes[0]
+                        };
+                        console.log(data);
+                        axios.post("/adminController/addStudent", data).then((response) => {
+                            if (response.data.code === 1) {
+                                this.$message.success("新增学生成功！");
+                            } else if (response.data.code === 0) {
+                                this.$message.error(response.data.msg);
+                            }
+                        });
+                    } else {
+                        console.log('添加错误！');
+                        return false;
+                    }
+                })
+            },
+            //获取学科部
+            getCollegeOption() {
+                axios.get('/adminController/queryStudentCollege').then(response => {
+                    this.collegeOptions = response.data;
+                })
+            },
+            //获取各学科部对应的专业
+            getMajorOption(collegeId) {
+                axios.get('/adminController/queryStudentMajor/' + collegeId).then(response => {
+                    this.majorOptions = response.data;
+                })
+            },
+            //获取各专业对应的班级
+            getClassesOption(majorId) {
+                axios.get('/adminController/queryStudentClasses/' + majorId).then(response => {
+                    this.classesOptions = response.data;
+                })
+            },
+            //学科部改变
+            handleCollegeChange(value) {
+                this.getMajorOption(value[value.length - 1]);
+                this.ruleForm.major = [];
+                this.ruleForm.classes = [];
+            },
+            //专业改变
+            handleMajorChange(value) {
+                this.getClassesOption(value[value.length - 1]);
+                this.ruleForm.classes = [];
+            },
+            //年龄验证
+            validateAge(rule, value, callback) {
+                if (value >= 1 && value <= 100) {
+                    callback()
+                } else {
+                    callback(new Error('年龄必须在 1~100 之间'))
+                }
+            },
+            //重置修改表单里的内容
+            resetForm() {
+                this.$refs.ruleForm.resetFields();
+            },
+        }
+    })
+</script>
+</body>
+</html>

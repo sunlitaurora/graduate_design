@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en" xmlns="">
+<head>
+    <meta charset="UTF-8">
+    <link rel="stylesheet" href="../plugins/element-ui/lib/theme-chalk/index.css">
+    <title>Title</title>
+</head>
+<body>
+<div id="test">
+
+</div>
+<script src="../plugins/vue/vue.js"></script>
+<script src="../plugins/element-ui/lib/index.js"></script>
+<script src="../plugins/axios/axios-0.18.0.js"></script>
+<script>
+    new Vue({
+        el: '#test',
+        data() {
+            return {
+                form: {
+                    age: ''
+                },
+                rules: {
+                    age: [
+                        {required: true, message: '请输入年龄', trigger: 'blur'},
+                        {type: 'number', message: '年龄必须为数字', trigger: 'blur'},
+                        {min: 1, max: 100, message: '年龄必须在 1~100 之间', trigger: 'blur'}
+                    ]
+                },
+                tableData: [
+                    {id: 1, name: "张三", age: 18},
+                    {id: 2, name: "李四", age: 20},
+                    {id: 3, name: "王五", age: 22}
+                ],
+                dialogVisible: false,
+                formData: {},
+            };
+        },
+        methods: {
+            submitForm() {
+                console.log(this.$refs.form);
+                this.$refs.form.validate(valid => {
+                    if (valid) {
+                        // 表单验证通过，进行提交操作
+                        console.log('提交表单')
+                    } else {
+                        // 表单验证失败，提示用户
+                        console.log('表单验证失败')
+                    }
+                })
+            },
+            resetForm(formName) {
+                this.$refs[formName].resetFields();
+            },
+            handleEdit(row) {
+                // 将当前行数据填充到表单中
+                this.formData = Object.assign({}, row);
+                this.dialogVisible = true;
+            },
+            handleSubmit() {
+                this.$refs.formData.validate(valid => {
+                    if (valid) {
+                        // 验证通过，发送表单数据到服务器进行保存
+                        console.log(this.formData);
+                        this.dialogVisible = false;
+                    } else {
+                        // 验证失败，提示用户错误信息
+                        console.log("验证失败");
+                    }
+                });
+            }
+        }
+    })
+</script>
+
+</body>
+</html>

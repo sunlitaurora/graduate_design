@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="../../plugins/element-ui/lib/theme-chalk/index.css">
+    <style>
+        .el-table .warning-row {
+            background: oldlace;
+        }
+
+        .el-table .success-row {
+            background: #f0f9eb;
+        }
+    </style>
+</head>
+<body>
+<div id="queryCourse">
+    <!--查询-->
+    <el-form :inline="true" class="demo-form-inline">
+        <el-form-item label="查询条件">
+            <el-select v-model="text" filterable placeholder="请选择" @change="select">
+                <el-option
+                        v-for="item in selectMenu"
+                        :key="item.value"
+                        :label="item.label"
+                        :value="item.value">
+                </el-option>
+            </el-select>
+        </el-form-item>
+        <el-form-item label="条件">
+            <el-input v-model="input" placeholder="请输入值"></el-input>
+        </el-form-item>
+        <el-form-item>
+            <el-button type="primary" @click="onSubmit">查询</el-button>
+        </el-form-item>
+    </el-form>
+
+    <!--显示课程信息-->
+    <el-table
+            :data="tableData"
+            style="width: 100%"
+            height="500"
+            :row-class-name="tableRowClassName"
+            border>
+        <el-table-column
+                prop="cid"
+                label="课程号">
+        </el-table-column>
+        <el-table-column
+                prop="cname"
+                label="课程名">
+        </el-table-column>
+        <el-table-column
+                prop="type"
+                label="类型">
+        </el-table-column>
+        <el-table-column
+                prop="college"
+                label="所属学科部">
+        </el-table-column>
+        <el-table-column
+                prop="major"
+                label="所属专业">
+        </el-table-column>
+        <el-table-column
+                align="center"
+                label="操作"
+                width="260">
+            <template slot-scope="scope">
+                <el-button type="text" @click="seeDetail(scope.row)">查看详情</el-button>
+                <el-button @click="updateCourse(scope.row)" type="primary" size="small">修改</el-button>
+                <el-button @click="deleteCourse(scope.row)" type="danger" size="small">删除</el-button>
+            </template>
+        </el-table-column>
+    </el-table>
+    <!--查看详情-->
+    <el-dialog
+            title="查看详情"
+            :visible.sync="dialogVisible"
+            width="80%">
+        <el-descriptions direction="vertical" :column="3" border>
+            <el-descriptions-item label="课程号">{{ruleForm.cid}}</el-descriptions-item>
+            <el-descriptions-item label="课程名">{{ruleForm.cname}}</el-descriptions-item>
+            <el-descriptions-item label="课程简介">{{ruleForm.cintroduction}}</el-descriptions-item>
+            <el-descriptions-item label="类型">{{ruleForm.type}}</el-descriptions-item>
+            <el-descriptions-item label="所属学院">{{ruleForm.college}}</el-descriptions-item>
+            <el-descriptions-item label="所属专业">{{ruleForm.major}}</el-descriptions-item>
+        </el-descriptions>
+    </el-dialog>
+    <!--修改弹窗-->
+    <el-dialog
+            title="修改课程"
+            :visible.sync="centerDialogVisible"
+            :before-close="handleClose"
+            center>
+        <el-form :model="ruleForm" :rules="formRules" ref="ruleForm" label-width="100px" class="demo-ruleForm">
+            <el-form-item label="课程名" prop="cname" show-message>
+                <el-input v-model="ruleForm.cname"></el-input>
+            </el-form-item>
+            <el-form-item label="课程简介" prop="cintroduction" show-message>
+                <el-input type="textarea" v-model="ruleForm.cintroduction"></el-input>
+            </el-form-item>
+            <el-form-item label="课程类型" prop="type" show-message>
+                <el-radio-group v-model="ruleForm.type">
+                    <el-radio label="必修"></el-radio>
+                    <el-radio label="选修"></el-radio>
+                </el-radio-group>
+            </el-form-item>
+            <el-form-item label="学科部信息" prop="college">
+                <el-cascader
+                        v-model="ruleForm.college"
+                        :options="collegeOptions"
+                        :props="{ value: 'id', label: 'college' }"
+                        @change="handleCollegeChange"></el-cascader>
+                {{collegeName}}
+            </el-form-item>
+            <el-form-item label="专业信息" prop="major">
+                <el-cascader
+                        v-model="ruleForm.major"
+                        :options="majorOptions"
+                        :props="{ value: 'id', label: 'major' }"></el-cascader>
+                {{majorName}}
+            </el-form-item>
+            <el-form-item>
+                <el-button type="primary" @click="submitForm">确认修改</el-button>
+                <el-button @click="resetForm">重置</el-button>
+            </el-form-item>
+        </el-form>
+    </el-dialog>
+    <el-pagination
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
+            :current-page="currentPage"
+            :page-sizes="[5, 10, 15, 20]"
+            :page-size="5"
+            layout="total, sizes, prev, pager, next, jumper"
+            :total="totalCount">
+    </el-pagination>
+</div>
+<script src="../../plugins/vue/vue.js"></script>
+<script src="../../plugins/element-ui/lib/index.js"></script>
+<script src="../../plugins/axios/axios-0.18.0.js"></script>
+<script type="text/javascript" src="../../js/jquery.min.js"></script>
+<script>
+    new Vue({
+        el: '#queryCourse',
+        data() {
+            return {
+                selectMenu: [{
+                    value: '1',
+                    label: '全部课程'
+                }, {
+                    value: '2',
+                    label: '按课程编号查询'
+                }, {
+                    value: '3',
+                    label: '按课程名查询'
+                }, {
+                    value: '4',
+                    label: '按课程类型查询'
+                }, {
+                    value: '5',
+                    label: '按所属学科部查询'
+                }],
+                //课程数据
+                tableData: [],
+                //当前页
+                currentPage: 1,
+                //分页数据大小
+                pageSize: 5,
+                //数据总数
+                totalCount: 0,
+                dialogVisible: false,
+                centerDialogVisible: false,
+                //选择框的值
+                text: '',
+                //查询条件选择
+                item: {
+                    value: ''
+                },
+                //查询输入值
+                input: '',
+                //点击修改后获取的课程信息
+                ruleForm: {
+                    cid: '',
+                    cname: '',
+                    cintroduction: '',
+                    type: '',
+                    collegeId: '',
+                    college: '',
+                    majorId: '',
+                    major: ''
+                },
+                collegeName: '',
+                majorName: '',
+                collegeOptions: [],
+                majorOptions: [],
+                formRules: {
+                    cid: [
+                        {required: true, message: '请输入课程编号', trigger: 'blur'},
+                        {pattern: /^[A-Za-z0-9]{1,4}$/, message: '课程编号应为1~4个数字或字母', trigger: 'blur'}
+                    ],
+                    cname: [
+                        {required: true, message: '请输入课程名称', trigger: 'blur'}
+                    ],
+                    cintroduction: [
+                        {required: true, message: '请输入课程介绍', trigger: 'blur'}
+                    ],
+                    type: [
+                        {required: true, message: '请选择课程类型', trigger: 'change'}
+                    ],
+                    college: [
+                        {required: true, message: '请选择所属学院', trigger: 'change'}
+                    ],
+                    major: [
+                        {required: true, message: '请选择所属专业', trigger: 'change'}
+                    ]
+                }
+            }
+        },
+        mounted() {
+            this.item.value = '1';
+            this.selectAll();
+        },
+        methods: {
+            //设置查询条件
+            select(value) {
+                this.item = this.selectMenu.find((item) => {
+                    return item.value === value;
+                });
+                this.input = '';
+            },
+            //查询所有
+            selectAll() {
+                const formData = new FormData();
+                formData.append('currentPage', this.currentPage);
+                formData.append('pageSize', this.pageSize);
+                formData.append('choice', this.item.value);
+                formData.append('condition', this.input);
+                axios.post("/adminController/queryCourse", formData, {
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    }
+                }).then(response => {
+                    //获得记录
+                    this.tableData = response.data.rows;
+                    console.log(this.tableData);
+                    //设置总记录数
+                    this.totalCount = response.data.totalCount;
+                })
+            },
+            //查看详情
+            seeDetail(row) {
+                this.ruleForm = row;
+                this.dialogVisible = true;
+            },
+            //点击修改按钮
+            updateCourse(row) {
+                this.ruleForm = Object.assign({}, row);
+                this.collegeName = row.college;
+                this.majorName = row.major;
+                this.centerDialogVisible = true;
+                this.getCollegeOption();
+            },
+            //点击删除按钮
+            deleteCourse(row) {
+                this.$confirm('此操作将永久删除该课程, 是否继续?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    axios.delete("/adminController/deleteCourse/" + row.cid).then(() => {
+                        this.$message.success("删除成功");
+                        this.selectAll();
+                    })
+                }).catch(() => {
+                    this.$message.info("已取消删除");
+                });
+            },
+            //关闭修改弹窗事件
+            handleClose(done) {
+                this.$confirm('确认关闭？')
+                    .then(_ => {
+                        done();
+                    })
+                    .catch(_ => {
+                    });
+            },
+            //提交修改数据
+            submitForm() {
+                this.$refs.ruleForm.validate((valid) => {
+                    if (valid) {
+                        let data;
+                        let formName = this.ruleForm;
+                        if (typeof formName.college[0] === 'string') {
+                            data = {
+                                cid: formName.cid,
+                                cname: formName.cname,
+                                cintroduction: formName.cintroduction,
+                                type: formName.type,
+                                collegeId: formName.collegeId,
+                                majorId: formName.majorId,
+                            };
+                        } else {
+                            data = {
+                                cid: formName.cid,
+                                cname: formName.cname,
+                                cintroduction: formName.cintroduction,
+                                type: formName.type,
+                                collegeId: formName.college[0],
+                                majorId: formName.major[0],
+                            };
+                        }
+                        axios.post("/adminController/updateCourse", data).then(() => {
+                            this.centerDialogVisible = false;
+                            this.$message.success("修改成功！");
+                            this.selectAll();
+                        });
+                    } else {
+                        console.log('修改错误');
+                        return false;
+                    }
+                })
+            },
+            //获取学科部
+            getCollegeOption() {
+                axios.get('/adminController/queryCourseCollege').then(response => {
+                    this.collegeOptions = response.data;
+                })
+            },
+            //获取各学科部对应的专业
+            getMajorOption(collegeId) {
+                axios.get('/adminController/queryCourseMajor/' + collegeId).then(response => {
+                    this.majorOptions = response.data;
+                })
+            },
+            //学科部改变
+            handleCollegeChange(value) {
+                this.getMajorOption(value[value.length - 1]);
+                this.ruleForm.major = [];
+            },
+            //重置修改表单里的内容
+            resetForm() {
+                this.$refs.ruleForm.resetFields();
+            },
+            //查询按钮事件
+            onSubmit() {
+                this.currentPage = 1;
+                this.selectAll();
+            },
+            //修改表格颜色
+            tableRowClassName({rowIndex}) {
+                if (rowIndex === 1 || rowIndex === 5 || rowIndex === 9) {
+                    return 'warning-row';
+                } else if (rowIndex === 3 || rowIndex === 7) {
+                    return 'success-row';
+                }
+                return '';
+            },
+            //修改显示数据大小
+            handleSizeChange(val) {
+                this.pageSize = val;
+                this.selectAll();
+            },
+            //修改当前页
+            handleCurrentChange(val) {
+                this.currentPage = val;
+                this.selectAll()
+            }
+        }
+    })
+</script>
+</body>
+</html>

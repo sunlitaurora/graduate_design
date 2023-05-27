@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="../../plugins/element-ui/lib/theme-chalk/index.css">
+    <style>
+        .el-table .warning-row {
+            background: oldlace;
+        }
+
+        .el-table .success-row {
+            background: #f0f9eb;
+        }
+    </style>
+</head>
+<body>
+<div id="manageCoursePlan">
+    <!--显示教学课程-->
+    <el-table
+            :data="tableData"
+            style="width: 100%"
+            height="500"
+            :row-class-name="tableRowClassName"
+            border>
+        <el-table-column
+                prop="courseclass"
+                label="班级名称">
+        </el-table-column>
+        <el-table-column
+                prop="courseweek"
+                label="上课周">
+        </el-table-column>
+        <el-table-column
+                prop="coursetime"
+                label="上课时间">
+        </el-table-column>
+        <el-table-column
+                prop="cname"
+                label="课程名">
+        </el-table-column>
+        <el-table-column
+                prop="classroom"
+                label="上课教室">
+        </el-table-column>
+        <el-table-column
+                prop="credits"
+                label="学分">
+        </el-table-column>
+        <el-table-column
+                prop="period"
+                label="学时">
+        </el-table-column>
+        <el-table-column
+                prop="totalNum"
+                label="总人数">
+        </el-table-column>
+        <el-table-column
+                align="center"
+                label="操作"
+                width="260">
+            <template slot-scope="scope">
+                <el-button @click="updateCoursePlan(scope.row)" type="primary" size="small">修改</el-button>
+                <el-button @click="deleteCoursePlan(scope.row)" type="danger" size="small">删除</el-button>
+            </template>
+        </el-table-column>
+    </el-table>
+    <!--修改弹窗-->
+    <el-dialog
+            title="修改课程安排"
+            :visible.sync="centerDialogVisible"
+            :before-close="handleClose"
+            center>
+        <el-form :model="ruleForm" :rules="formRules" ref="ruleForm" label-width="100px" class="demo-ruleForm">
+            <el-form-item label="班级名称" prop="courseclass" show-message>
+                <el-input v-model="ruleForm.courseclass" :disabled="true"></el-input>
+            </el-form-item>
+            <el-form-item label="上课周" prop="courseweek" show-message>
+                <el-select v-model="ruleForm.courseweek" multiple placeholder="请选择">
+                    <el-option
+                            v-for="item in option1"
+                            :key="item.value"
+                            :label="item.label"
+                            :value="item.value">
+                    </el-option>
+                </el-select>
+            </el-form-item>
+            <el-form-item label="上课时间" prop="coursetime" show-message>
+                <el-select v-model="ruleForm.coursetime" multiple placeholder="请选择">
+                    <el-option
+                            v-for="item in option2"
+                            :key="item.value"
+                            :label="item.label"
+                            :value="item.value">
+                    </el-option>
+                </el-select>
+            </el-form-item>
+            <el-form-item label="课程编号" prop="cid" show-message>
+                <el-input v-model="ruleForm.cid" :disabled="true"></el-input>
+            </el-form-item>
+            <el-form-item label="教师编号" prop="tid" show-message>
+                <el-input v-model="ruleForm.tid" :disabled="true"></el-input>
+            </el-form-item>
+            <el-form-item label="上课教室" prop="classroom" show-message>
+                <el-input v-model="ruleForm.classroom"></el-input>
+            </el-form-item>
+            <el-form-item label="学分" prop="credits" show-message>
+                <el-input v-model.number="ruleForm.credits"></el-input>
+            </el-form-item>
+            <el-form-item label="学时" prop="period" show-message>
+                <el-input v-model.number="ruleForm.period"></el-input>
+            </el-form-item>
+            <el-form-item label="总人数" prop="totalNum" show-message>
+                <el-input v-model.number="ruleForm.totalNum"></el-input>
+            </el-form-item>
+            <el-form-item>
+                <el-button type="primary" @click="submitForm">确认修改</el-button>
+                <el-button @click="resetForm">重置</el-button>
+            </el-form-item>
+        </el-form>
+    </el-dialog>
+    <el-pagination
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
+            :current-page="currentPage"
+            :page-sizes="[5, 10, 15, 20]"
+            :page-size="5"
+            layout="total, sizes, prev, pager, next, jumper"
+            :total="totalCount">
+    </el-pagination>
+</div>
+<script src="../../plugins/vue/vue.js"></script>
+<script src="../../plugins/element-ui/lib/index.js"></script>
+<script src="../../plugins/axios/axios-0.18.0.js"></script>
+<script type="text/javascript" src="../../js/jquery.min.js"></script>
+<script>
+    new Vue({
+        el: '#manageCoursePlan',
+        data() {
+            return {
+                //老师信息
+                userInfo: '',
+                //课程安排数据
+                tableData: [],
+                option1: [{
+                    value: '1',
+                    label: '星期一'
+                }, {
+                    value: '2',
+                    label: '星期二'
+                }, {
+                    value: '3',
+                    label: '星期三'
+                }, {
+                    value: '4',
+                    label: '星期四'
+                }, {
+                    value: '5',
+                    label: '星期五'
+                }, {
+                    value: '6',
+                    label: '星期六'
+                }, {
+                    value: '7',
+                    label: '星期日'
+                }],
+                option2: [{
+                    value: '12',
+                    label: '第一二节'
+                }, {
+                    value: '34',
+                    label: '第三四节'
+                }, {
+                    value: '56',
+                    label: '第五六节'
+                }, {
+                    value: '78',
+                    label: '第七八节'
+                }],
+                //当前页
+                currentPage: 1,
+                //分页数据大小
+                pageSize: 5,
+                //数据总数
+                totalCount: 0,
+                centerDialogVisible: false,
+                //点击修改后获取的老师信息
+                ruleForm: {
+                    courseclass: '',
+                    courseweek: [],
+                    coursetime: [],
+                    cid: '',
+                    tid: '',
+                    classroom: '',
+                    credits: '',
+                    period: '',
+                    totalNum: ''
+                },
+                formRules: {
+                    coursetime: [
+                        {required: true, message: '请选择上课时间', trigger: 'blur'}
+                    ],
+                    courseweek: [
+                        {required: true, message: '请选择上课周次', trigger: 'blur'}
+                    ],
+                    classroom: [
+                        {required: true, message: '请输入教室号', trigger: 'blur'}
+                    ],
+                    credits: [
+                        {required: true, message: '请输入学分', trigger: 'blur'},
+                        {type: 'number', message: '学分必须为数字', trigger: 'blur'}
+                    ],
+                    period: [
+                        {required: true, message: '请输入学时', trigger: 'blur'},
+                        {type: 'number', message: '学时必须为数字', trigger: 'blur'}
+                    ],
+                    totalNum: [
+                        {required: true, message: '请输入总人数', trigger: 'blur'},
+                        {type: 'number', message: '总人数必须为数字', trigger: 'blur'}
+                    ]
+                }
+            }
+        },
+        mounted() {
+            this.selectAll();
+        },
+        created() {
+            const userInfo = window.localStorage.getItem('userInfo');
+            if (userInfo) {
+                this.userInfo = JSON.parse(userInfo);
+            }
+        },
+        methods: {
+            //查询所有
+            selectAll() {
+                const formData = new FormData();
+                formData.append('currentPage', this.currentPage);
+                formData.append('pageSize', this.pageSize);
+                formData.append('tid', this.userInfo.tid);
+                axios.post("/teacherController/queryCoursePlan", formData, {
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    }
+                }).then(response => {
+                    //获得记录
+                    this.tableData = response.data.rows;
+                    //设置总记录数
+                    this.totalCount = response.data.totalCount;
+                });
+            },
+            //点击修改按钮
+            updateCoursePlan(row) {
+                this.ruleForm = Object.assign({}, row);
+                this.ruleForm.courseweek = row.courseweek.split(",");
+                this.ruleForm.coursetime = row.coursetime.split(",");
+                this.centerDialogVisible = true;
+            },
+            //点击删除按钮
+            deleteCoursePlan(row) {
+                this.$confirm('此操作将永久删除该课程, 是否继续?', '提示', {
+                    confirmButtonText: '确定',
+                    cancelButtonText: '取消',
+                    type: 'warning'
+                }).then(() => {
+                    axios.delete("/teacherController/deleteCoursePlan/" + row.courseclass).then(() => {
+                        this.$message.success("删除成功");
+                        this.selectAll();
+                    })
+                }).catch(() => {
+                    this.$message.info("已取消删除");
+                });
+            },
+            //关闭修改弹窗事件
+            handleClose(done) {
+                this.$confirm('确认关闭？')
+                    .then(_ => {
+                        done();
+                    })
+                    .catch(_ => {
+                    });
+            },
+            //提交修改数据
+            submitForm() {
+                this.$refs.ruleForm.validate((valid) => {
+                    if (valid) {
+                        let data;
+                        let formName = this.ruleForm;
+                        data = {
+                            courseclass: formName.courseclass,
+                            courseweek: formName.courseweek.join(","),
+                            coursetime: formName.coursetime.join(","),
+                            cid: formName.cid,
+                            tid: formName.tid,
+                            classroom: formName.classroom,
+                            credits: formName.credits,
+                            period: formName.period,
+                            totalNum: formName.totalNum
+                        };
+                        axios.post("/teacherController/updateCoursePlan", data).then(() => {
+                            this.centerDialogVisible = false;
+                            this.$message.success("修改成功！");
+                            this.selectAll();
+                        });
+                    } else {
+                        this.message.error("修改错误！")
+                        return false;
+                    }
+                })
+            },
+            //重置修改表单里的内容
+            resetForm() {
+                this.$refs.ruleForm.resetFields();
+            },
+            //修改表格颜色
+            tableRowClassName({rowIndex}) {
+                if (rowIndex === 1 || rowIndex === 5 || rowIndex === 9) {
+                    return 'warning-row';
+                } else if (rowIndex === 3 || rowIndex === 7) {
+                    return 'success-row';
+                }
+                return '';
+            },
+            //修改显示数据大小
+            handleSizeChange(val) {
+                this.pageSize = val;
+                this.selectAll();
+            },
+            //修改当前页
+            handleCurrentChange(val) {
+                this.currentPage = val;
+                this.selectAll()
+            }
+        }
+    })
+</script>
+</body>
+</html>

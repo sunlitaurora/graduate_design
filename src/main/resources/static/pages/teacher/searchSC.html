@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="../../plugins/element-ui/lib/theme-chalk/index.css">
+    <style>
+        .el-table .warning-row {
+            background: oldlace;
+        }
+
+        .el-table .success-row {
+            background: #f0f9eb;
+        }
+    </style>
+</head>
+<body>
+<div id="searchSC">
+    <!--显示选课总览课程-->
+    <el-table
+            :data="tableData"
+            style="width: 100%"
+            height="500"
+            :row-class-name="tableRowClassName"
+            border>
+        <el-table-column
+                prop="cname"
+                label="课程名">
+        </el-table-column>
+        <el-table-column
+                prop="totalNum"
+                label="总人数">
+        </el-table-column>
+        <el-table-column
+                prop="stuSum"
+                label="已报名人数">
+        </el-table-column>
+        <el-table-column
+                align="center"
+                label="操作">
+            <template slot-scope="scope">
+                <el-button @click="lookChoose(scope.row)" type="primary" size="small">查看名单</el-button>
+            </template>
+        </el-table-column>
+        <el-table-column
+                align="center"
+                label="结课">
+            <template slot-scope="scope">
+                <el-button @click="endCourse(scope.row)" type="primary" size="small">结课</el-button>
+            </template>
+        </el-table-column>
+        <el-table-column
+                align="center"
+                label="成绩查询">
+            <template slot-scope="scope">
+                <el-button @click="endCourseGrade(scope.row)" type="primary" size="small">查询成绩</el-button>
+            </template>
+        </el-table-column>
+    </el-table>
+    <el-pagination
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
+            :current-page="currentPage"
+            :page-sizes="[5, 10, 15, 20]"
+            :page-size="5"
+            layout="total, sizes, prev, pager, next, jumper"
+            :total="totalCount">
+    </el-pagination>
+</div>
+<script src="../../plugins/vue/vue.js"></script>
+<script src="../../plugins/element-ui/lib/index.js"></script>
+<script src="../../plugins/axios/axios-0.18.0.js"></script>
+<script type="text/javascript" src="../../js/jquery.min.js"></script>
+<script>
+    new Vue({
+        el: '#searchSC',
+        data() {
+            return {
+                //老师信息
+                userInfo: '',
+                //课程安排数据
+                tableData: [],
+                //当前页
+                currentPage: 1,
+                //分页数据大小
+                pageSize: 5,
+                //数据总数
+                totalCount: 0,
+                centerDialogVisible: false,
+            }
+        },
+        mounted() {
+            this.selectAll();
+        },
+        created() {
+            const userInfo = window.localStorage.getItem('userInfo');
+            if (userInfo) {
+                this.userInfo = JSON.parse(userInfo);
+            }
+        },
+        methods: {
+            //查询所有
+            selectAll() {
+                const formData = new FormData();
+                formData.append('currentPage', this.currentPage);
+                formData.append('pageSize', this.pageSize);
+                formData.append('tid', this.userInfo.tid);
+                axios.post("/teacherController/searchSC", formData, {
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    }
+                }).then(response => {
+                    //获得记录
+                    this.tableData = response.data.rows;
+                    //设置总记录数
+                    this.totalCount = response.data.totalCount;
+                });
+            },
+            //点击查询成绩按钮
+            lookChoose(row) {
+                let data = {
+                    cid: row.cid,
+                    cname: row.cname,
+                    tid: row.tid
+                }
+                sessionStorage.setItem('studentInfo', JSON.stringify(data));
+                window.location.href = 'printStudent.html';
+            },
+            //点击结课按钮
+            endCourse(row) {
+                let data = {
+                    cid: row.cid,
+                    cname: row.cname,
+                    tid: row.tid
+                }
+                sessionStorage.setItem('studentInfo', JSON.stringify(data));
+                window.location.href = 'endCourse.html';
+            },
+            //点击查询成绩按钮
+            endCourseGrade(row) {
+                let data = {
+                    cid: row.cid,
+                    cname: row.cname,
+                }
+                sessionStorage.setItem('studentInfo', JSON.stringify(data));
+                window.location.href = 'endCourseGrade.html';
+            },
+            //修改表格颜色
+            tableRowClassName({rowIndex}) {
+                if (rowIndex === 1 || rowIndex === 5 || rowIndex === 9) {
+                    return 'warning-row';
+                } else if (rowIndex === 3 || rowIndex === 7) {
+                    return 'success-row';
+                }
+                return '';
+            },
+            //修改显示数据大小
+            handleSizeChange(val) {
+                this.pageSize = val;
+                this.selectAll();
+            },
+            //修改当前页
+            handleCurrentChange(val) {
+                this.currentPage = val;
+                this.selectAll()
+            }
+        }
+    })
+</script>
+</body>
+</html>

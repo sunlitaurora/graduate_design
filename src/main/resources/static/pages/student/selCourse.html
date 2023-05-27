@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="../../plugins/element-ui/lib/theme-chalk/index.css">
+    <style>
+        .el-table .warning-row {
+            background: oldlace;
+        }
+
+        .el-table .success-row {
+            background: #f0f9eb;
+        }
+    </style>
+</head>
+<body>
+<div id="selCourse">
+    <!--查询-->
+    <el-form :inline="true" class="demo-form-inline">
+        <el-form-item label="查询条件">
+            <el-select v-model="text" filterable placeholder="请选择" @change="select">
+                <el-option
+                        v-for="item in selectMenu"
+                        :key="item.value"
+                        :label="item.label"
+                        :value="item.value">
+                </el-option>
+            </el-select>
+        </el-form-item>
+        <el-form-item label="条件">
+            <el-input v-model="input" placeholder="请输入值"></el-input>
+        </el-form-item>
+        <el-form-item>
+            <el-button type="primary" @click="onSubmit">查询</el-button>
+        </el-form-item>
+    </el-form>
+    <!--显示学生信息-->
+    <el-table
+            :data="tableData"
+            style="width: 100%"
+            height="500"
+            :row-class-name="tableRowClassName"
+            border>
+        <el-table-column
+                prop="cid"
+                label="课程号">
+        </el-table-column>
+        <el-table-column
+                prop="cname"
+                label="课程名">
+        </el-table-column>
+        <el-table-column
+                prop="type"
+                label="类型">
+        </el-table-column>
+        <el-table-column
+                prop="college"
+                label="所属学科部">
+        </el-table-column>
+        <el-table-column
+                prop="major"
+                label="所属专业">
+        </el-table-column>
+        <el-table-column
+                prop="tname"
+                label="代课老师">
+        </el-table-column>
+        <el-table-column
+                align="center"
+                label="操作"
+                width="260">
+            <template slot-scope="scope">
+                <el-button type="text" @click="seeDetail(scope.row)">查看详情</el-button>
+                <el-button @click="addCoursePlan(scope.row)" type="primary" size="small">选择</el-button>
+            </template>
+        </el-table-column>
+    </el-table>
+    <!--查看详情-->
+    <el-dialog
+            title="查看详情"
+            :visible.sync="dialogVisible"
+            width="80%">
+        <el-descriptions direction="vertical" :column="3" border>
+            <el-descriptions-item label="课程号">{{Form.cid}}</el-descriptions-item>
+            <el-descriptions-item label="课程名">{{Form.cname}}</el-descriptions-item>
+            <el-descriptions-item label="课程简介">{{Form.cintroduction}}</el-descriptions-item>
+            <el-descriptions-item label="类型">{{Form.type}}</el-descriptions-item>
+            <el-descriptions-item label="所属学院">{{Form.college}}</el-descriptions-item>
+            <el-descriptions-item label="所属专业">{{Form.major}}</el-descriptions-item>
+        </el-descriptions>
+    </el-dialog>
+    <!--选择弹窗-->
+
+    <el-dialog
+            title="进入选课"
+            :visible.sync="centerDialogVisible1"
+            :before-close="handleClose"
+            center>
+        <h5>课程名</h5>
+        <p>{{ruleForm.cname}}</p>
+        <h5>代课教师</h5>
+        <p>{{ruleForm.tname}}</p>
+        <h5>教师电话</h5>
+        <p>{{teacher.tphone}}</p>
+        <h5>教师邮箱</h5>
+        <p>{{teacher.temail}}</p>
+        <span slot="footer" class="dialog-footer">
+            <el-button @click="centerDialogVisible1 = false">取 消</el-button>
+            <el-button type="primary" @click="submitCourse">确 定 选 课</el-button>
+        </span>
+    </el-dialog>
+    <el-dialog
+            title="进入无教师选课"
+            :visible.sync="centerDialogVisible2"
+            :before-close="handleClose"
+            center>
+        <h5>课程名</h5>
+        <p>{{ruleForm.cname}}</p> 该课程暂无教师代理，是否选课等待？注意：选课之后再教师代理之前无法查看选课结果，但是可以退选
+        <span slot="footer" class="dialog-footer">
+            <el-button @click="centerDialogVisible2 = false">取 消</el-button>
+            <el-button type="primary" @click="submitCourse">确 定 选 课</el-button>
+        </span>
+    </el-dialog>
+    <el-pagination
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
+            :current-page="currentPage"
+            :page-sizes="[5, 10, 15, 20]"
+            :page-size="5"
+            layout="total, sizes, prev, pager, next, jumper"
+            :total="totalCount">
+    </el-pagination>
+</div>
+<script src="../../plugins/vue/vue.js"></script>
+<script src="../../plugins/element-ui/lib/index.js"></script>
+<script src="../../plugins/axios/axios-0.18.0.js"></script>
+<script type="text/javascript" src="../../js/jquery.min.js"></script>
+<script>
+    new Vue({
+        el: '#selCourse',
+        data() {
+            return {
+                //个人信息
+                userInfo: '',
+                selectMenu: [{
+                    value: '1',
+                    label: '全部课程'
+                }, {
+                    value: '2',
+                    label: '按课程编号查询'
+                }, {
+                    value: '3',
+                    label: '按课程名查询'
+                }, {
+                    value: '4',
+                    label: '按课程类型查询'
+                }, {
+                    value: '5',
+                    label: '按所属学科部查询'
+                }],
+                //课程数据
+                tableData: [],
+                //当前页
+                currentPage: 1,
+                //分页数据大小
+                pageSize: 5,
+                //数据总数
+                totalCount: 0,
+                dialogVisible: false,
+                centerDialogVisible1: false,
+                centerDialogVisible2: false,
+                //选择框的值
+                text: '',
+                //查询条件选择
+                item: {
+                    value: ''
+                },
+                //查询输入值
+                input: '',
+                //选课老师信息
+                teacher: {},
+                //查看详请
+                Form: {
+                    cid: '',
+                    cname: '',
+                    cintroduction: '',
+                    type: '',
+                    collegeId: '',
+                    college: '',
+                    majorId: '',
+                    major: '',
+                    tid: '',
+                    tname: ''
+                },
+                //点击选择后获得的信息
+                ruleForm: {},
+            }
+        },
+        mounted() {
+            this.item.value = '1';
+            this.selectAll();
+        },
+        created() {
+            const userInfo = window.localStorage.getItem('userInfo');
+            if (userInfo) {
+                this.userInfo = JSON.parse(userInfo);
+            }
+        },
+        methods: {
+            //设置查询条件
+            select(value) {
+                this.item = this.selectMenu.find((item) => {
+                    return item.value === value;
+                });
+                this.input = '';
+            },
+            //查询所有
+            selectAll() {
+                const formData = new FormData();
+                formData.append('currentPage', this.currentPage);
+                formData.append('pageSize', this.pageSize);
+                formData.append('choice', this.item.value);
+                formData.append('condition', this.input);
+                axios.post("/studentController/queryAllCourse", formData, {
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    }
+                }).then(response => {
+                    //获得记录
+                    this.tableData = response.data.rows;
+                    //设置总记录数
+                    this.totalCount = response.data.totalCount;
+                })
+            },
+            //查看详情
+            seeDetail(row) {
+                this.Form = row;
+                this.dialogVisible = true;
+            },
+            //点击选择按钮
+            addCoursePlan(row) {
+                this.ruleForm = row;
+                if (row.tname != null) {
+                    axios.get("/studentController/getTeacher/" + row.tid).then(response => {
+                        this.teacher = response.data;
+                    })
+                    this.centerDialogVisible1 = true;
+                } else {
+                    this.centerDialogVisible2 = true;
+                }
+            },
+            //关闭弹窗事件
+            handleClose(done) {
+                this.$confirm('确认关闭？')
+                    .then(_ => {
+                        done();
+                    })
+                    .catch(_ => {
+                    });
+            },
+            //提交课程安排数据
+            submitCourse() {
+                const formData = new FormData();
+                formData.append('cid', this.ruleForm.cid);
+                formData.append('sid', this.userInfo.sid);
+                formData.append('tid', this.ruleForm.tid);
+                axios.post("/studentController/queryCourse", formData, {
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    }
+                }).then(response => {
+                    if (response.data.code === 1) {
+                        this.$message.success("选课成功");
+                    } else if (response.data.code === 0) {
+                        this.$message.error(response.data.msg);
+                    }
+                }).finally(() => {
+                    this.centerDialogVisible1 = false;
+                    this.centerDialogVisible2 = false;
+                })
+            },
+            //查询按钮事件
+            onSubmit() {
+                this.currentPage = 1;
+                this.selectAll();
+            },
+            //修改表格颜色
+            tableRowClassName({rowIndex}) {
+                if (rowIndex === 1 || rowIndex === 5 || rowIndex === 9) {
+                    return 'warning-row';
+                } else if (rowIndex === 3 || rowIndex === 7) {
+                    return 'success-row';
+                }
+                return '';
+            },
+            //修改显示数据大小
+            handleSizeChange(val) {
+                this.pageSize = val;
+                this.selectAll();
+            },
+            //修改当前页
+            handleCurrentChange(val) {
+                this.currentPage = val;
+                this.selectAll()
+            }
+        }
+    })
+</script>
+</body>
+</html>

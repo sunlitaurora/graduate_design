@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="../../plugins/element-ui/lib/theme-chalk/index.css">
+    <link rel="stylesheet" href="../../styles/index.css"/>
+    <style>
+        .el-table .warning-row {
+            background: oldlace;
+        }
+
+        .el-table .success-row {
+            background: #f0f9eb;
+        }
+    </style>
+</head>
+<body>
+<div id="endCourse">
+    <div>
+        <el-button type="text" icon="el-icon-back" alt="返回" @click="back"></el-button>
+        录入成绩
+    </div>
+    <h6>开课名 {{studentInfo.cname}}</h6>
+    <!--显示学生信息-->
+    <el-table
+            :data="tableData"
+            style="width: 100%"
+            height="400"
+            :row-class-name="tableRowClassName"
+            border>
+        <el-table-column
+                prop="sid"
+                label="学号">
+        </el-table-column>
+        <el-table-column
+                prop="sname"
+                label="姓名">
+        </el-table-column>
+        <el-table-column
+                prop="ssex"
+                label="性别">
+        </el-table-column>
+        <el-table-column
+                prop="college"
+                label="学科部">
+        </el-table-column>
+        <el-table-column
+                prop="major"
+                label="专业">
+        </el-table-column>
+        <el-table-column
+                prop="classes"
+                label="班级">
+        </el-table-column>
+        <el-table-column
+                prop="grade"
+                label="添加成绩"
+                align="center"
+                width="350px">
+            <template slot-scope="scope">
+                <el-button type="primary" @click="onSubmit(scope.row)" size="small">添加成绩</el-button>
+            </template>
+        </el-table-column>
+    </el-table>
+    <!--添加成绩弹窗-->
+    <el-dialog
+            title="添加成绩"
+            :visible.sync="centerDialogVisible"
+            :before-close="handleClose"
+            center>
+        <el-form :model="ruleForm" :rules="formRules" ref="ruleForm" label-width="100px" class="demo-ruleForm">
+            <el-form-item label="学号" prop="sid" show-message>
+                {{ruleForm.sid}}
+            </el-form-item>
+            <el-form-item label="姓名" prop="sname" show-message>
+                {{ruleForm.sname}}
+            </el-form-item>
+            <el-form-item label="成绩" prop="grade" show-message>
+                <el-input v-model.number="ruleForm.grade"></el-input>
+            </el-form-item>
+            <el-form-item>
+                <el-button type="primary" @click="submitForm">确认添加</el-button>
+                <el-button @click="resetForm">重置</el-button>
+            </el-form-item>
+        </el-form>
+    </el-dialog>
+    <el-pagination
+            @size-change="handleSizeChange"
+            @current-change="handleCurrentChange"
+            :current-page="currentPage"
+            :page-sizes="[5, 10, 15, 20]"
+            :page-size="5"
+            layout="total, sizes, prev, pager, next, jumper"
+            :total="totalCount">
+    </el-pagination>
+</div>
+<script src="../../plugins/vue/vue.js"></script>
+<script src="../../plugins/element-ui/lib/index.js"></script>
+<script src="../../plugins/axios/axios-0.18.0.js"></script>
+<script type="text/javascript" src="../../js/jquery.min.js"></script>
+<script>
+    new Vue({
+        el: '#endCourse',
+        data() {
+            return {
+                studentInfo: {},
+                //学生数据
+                tableData: [],
+                //当前页
+                currentPage: 1,
+                //分页数据大小
+                pageSize: 5,
+                //数据总数
+                totalCount: 0,
+                centerDialogVisible: false,
+                ruleForm: {
+                    sid: '',
+                    sname: '',
+                    grade: ''
+                },
+                formRules: {
+                    grade: [
+                        {required: true, message: '请输入成绩', trigger: 'blur'},
+                        {type: 'number', message: '成绩必须为数字', trigger: 'blur'}
+                    ],
+                }
+            }
+        },
+        mounted() {
+            const studentInfo = window.sessionStorage.getItem('studentInfo');
+            if (studentInfo) {
+                this.studentInfo = JSON.parse(studentInfo);
+            }
+            this.selectAll();
+        },
+        methods: {
+            back() {
+                window.location.href = "searchSC.html";
+                sessionStorage.removeItem("studentInfo")
+            },
+            //查询所有
+            selectAll() {
+                const data = new FormData();
+                data.append('currentPage', this.currentPage);
+                data.append('pageSize', this.pageSize);
+                data.append('cid', this.studentInfo.cid);
+                data.append('tid', this.studentInfo.tid);
+                axios.post("/teacherController/lookEndChoose", data, {
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded'
+                    }
+                }).then(response => {
+                    //获得记录
+                    this.tableData = response.data.rows;
+                    //设置总记录数
+                    this.totalCount = response.data.totalCount;
+                });
+            },
+            onSubmit(row) {
+                this.ruleForm = row;
+                this.centerDialogVisible = true;
+            },
+            //关闭修改弹窗事件
+            handleClose(done) {
+                this.$confirm('确认关闭？')
+                    .then(_ => {
+                        done();
+                    })
+                    .catch(_ => {
+                    });
+            },
+            //提交修改数据
+            submitForm() {
+                this.$refs.ruleForm.validate((valid) => {
+                    if (valid) {
+                        const data = new FormData();
+                        data.append('cid', this.studentInfo.cid);
+                        data.append('tid', this.studentInfo.tid);
+                        data.append('sid', this.ruleForm.sid);
+                        data.append('grade', this.ruleForm.grade);
+                        axios.post("/teacherController/addGrade", data, {
+                            headers: {
+                                'Content-Type': 'application/x-www-form-urlencoded'
+                            }
+                        }).then(() => {
+                            this.centerDialogVisible = false;
+                            this.$message.success("添加成绩成功！");
+                            this.selectAll();
+                        });
+                    } else {
+                        console.log('添加错误');
+                        return false;
+                    }
+                })
+            },
+            //重置修改表单里的内容
+            resetForm() {
+                this.$refs.ruleForm.resetFields();
+            },
+            //修改表格颜色
+            tableRowClassName({rowIndex}) {
+                if (rowIndex === 1 || rowIndex === 5 || rowIndex === 9) {
+                    return 'warning-row';
+                } else if (rowIndex === 3 || rowIndex === 7) {
+                    return 'success-row';
+                }
+                return '';
+            },
+            //修改显示数据大小
+            handleSizeChange(val) {
+                this.pageSize = val;
+                this.selectAll();
+            },
+            //修改当前页
+            handleCurrentChange(val) {
+                this.currentPage = val;
+                this.selectAll()
+            }
+        }
+    })
+</script>
+</body>
+</html>
