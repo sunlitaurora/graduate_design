@@ -238,4 +238,10 @@ public class AdminController {
     public List<Major> queryCourseMajor(@PathVariable Integer collegeId) {
         return majorService.queryCourseMajor(collegeId);
     }
+
+    @RequestMapping("/query")
+    @ResponseBody
+    public String query(String username) {
+        return "查询成功";
+    }
 }
